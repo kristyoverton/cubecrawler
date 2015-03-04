@@ -4,6 +4,7 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 	$scope.gameNotStarted = true;
 	$scope.messages = [];
 	$scope.enemies = [];
+	$scope.items = [];
 
 	function Character (name,x,y,mapCharacter,sanity,level,strength) {
 		this.name = name;
@@ -249,6 +250,18 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 		$scope.player = new Player($scope.name,5,5,'@',10,0,1,10);
 		//name,x,y,mapCharacter,sanity,boredom,level,strength
 		$scope.enemies = add_enemies();
+		
+		mapFactory.getItem('sanity',function(item){
+				item.x = Math.ceil(Math.random()*24);
+				item.y = Math.ceil(Math.random()*24);
+				$scope.items = item;
+				mapFactory.update($scope.map,item.x,item.y,item.mapCharacter, item.x,item.y,item.mapCharacter, function(){
+					mapFactory.getMap(function(data){
+						$scope.map = data;
+					});
+				});
+			});
+
 		mapFactory.initMap($scope.enemies,function (data){
 	        $scope.map = data;
 	        messageFactory.welcome(function (msg){
@@ -256,7 +269,8 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 		          $scope.messages.push(msg[item]);
 		        }
 		    });
-	        messageFactory.enemyWarning($scope.enemies, function(){
+
+	    messageFactory.enemyWarning($scope.enemies, function(){
               messageFactory.getMessages(function(data){
                 $scope.messages = data;  
 	    	  });
@@ -279,8 +293,6 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 				time_passes();	
 			};
 		} //onkeydown
-
-	//	time_passes();
 
 	} //doGame
 

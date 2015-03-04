@@ -1,6 +1,7 @@
-cubeCrawler.factory('mapFactory',function (){
+cubeCrawler.factory('mapFactory',function ($http){
       var factory = {};
       var map = {};
+      var items = {};
       factory.initMap = function(enemies, callback) {
 		  	map = [
       			{0: ['#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#']},
@@ -25,15 +26,20 @@ cubeCrawler.factory('mapFactory',function (){
      			{19: ['#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#']}
       	];
 
-       for (enemy in enemies) {
-          var x = enemies[enemy]['x'];
-          var y = enemies[enemy]['y'];
-          map[y][y][x] = enemies[enemy].mapCharacter;
-        } 
-        
-         
-          callback(map);
-        };
+        for (enemy in enemies) {
+            var x = enemies[enemy]['x'];
+            var y = enemies[enemy]['y'];
+            map[y][y][x] = enemies[enemy].mapCharacter;
+          } 
+
+        for (item in items) {
+          var x = items[item]['x'];
+          var y = items[item]['y'];
+          map[y][y][x] = items[item].mapCharacter;
+        }
+
+        callback(map);
+      }//initMap
 
         factory.updatePlayerCoords = function(callback) {
         	callback(map);
@@ -50,6 +56,13 @@ cubeCrawler.factory('mapFactory',function (){
             callback(map);
           };
   
-      return factory;
-    });
+        factory.getItem = function(stat,callback) {
+        $http.get('/items/'+stat+'/').success(function(output){
+          item = output;
+          callback(item);
+        });
+      } //getItem
+
+  return factory;
+});
 		
