@@ -1,0 +1,8 @@
+<div>
+	<input type="text" ng-show="gameNotStarted" ng-model="name" placeholder="Enter Player Name">
+<button class="btn btn-warn" ng-show="gameNotStarted" ng-click="doGame(name)">CUBE CRAWL!</button>
+<span ng-repeat="row in map track by $index">
+	<span ng-repeat="char in row[$index] track by $index">{{char}}</span><br>
+</span>	
+
+</div>
