@@ -33,12 +33,21 @@ cubeCrawler.factory('mapFactory',function ($http){
           } 
 
         for (item in items) {
-          var x = items[item]['x'];
-          var y = items[item]['y'];
-          map[y][y][x] = items[item].mapCharacter;
+            var x;
+            var y;
+            do { 
+              x = Math.ceil(Math.random()*24);
+              y = Math.ceil(Math.random()*19);
+            } while(map[y][y][x] !== ".");
+
+            items[item]['x'] = x;
+            items[item]['y'] = y;
+            
+            map[y][y][x] = items[item].mapCharacter;
         }
 
-        callback(map);
+        var returndata = {'map':map,"items":items};
+        callback(returndata);
       }//initMap
 
         factory.updatePlayerCoords = function(callback) {
@@ -53,12 +62,16 @@ cubeCrawler.factory('mapFactory',function ($http){
       };
 
         factory.getMap = function(callback){
-            callback(map);
+            var returndata = {'map':map,"items":items};
+            callback(returndata);
           };
   
         factory.getItem = function(stat,callback) {
         $http.get('/items/'+stat+'/').success(function(output){
           item = output;
+          item.x = Math.ceil(Math.random()*24);
+          item.y = Math.ceil(Math.random()*19);
+
           callback(item);
         });
       } //getItem

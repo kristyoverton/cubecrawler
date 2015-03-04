@@ -14,10 +14,33 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 		this.sanity = sanity;
 		this.level = level;
 
+		this.nextLevel = function() {
+			$scope.enemies = add_enemies();
+			mapFactory.initMap($scope.enemies,function (data){
+		        $scope.map = data;
+		        messageFactory.welcome(function (msg){
+					for (item in msg) {
+			          $scope.messages.push(msg[item]);
+			        }
+			    });
+		        messageFactory.enemyWarning($scope.enemies, function(){
+	              messageFactory.getMessages(function(data){
+	                $scope.messages = data;  
+		    	  });
+		    	});
+		    });
+		    this.x=5;
+		    this.y=5;
+		    this.level++;
+		}
 		//check sanity function required for both player and enemy.  Should be put into function for creating character object
 		this.checkSanity=function(){
 			if(this.sanity<=0&&this.type=='player'){
-				return false;//function for player losing
+				document.getElementById('map').style.display = 'none';
+				document.getElementById('inventory').style.display = 'none';
+				document.getElementById('stats').style.display = 'none';
+				document.getElementById('gameover_sanity').style.display = 'block';
+				return false;
 			}
 			if(this.type=='enemy'){
 				if(this.sanity<=0) {
@@ -32,7 +55,7 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 	  				$scope.enemies.splice(index,1);
 					mapFactory.update($scope.map,this.x,this.y,'.', this.x,this.y,'.', function(){
 							mapFactory.getMap(function(data){
-							$scope.map = data;
+							$scope.map = data.map;
 							$scope.$digest();
 						});
 					});
@@ -43,17 +66,20 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 			}
 		}
 
+
 		this.fight=function(enemy){
-			messageFactory.addMessage(this.name+" attacks "+enemy.name+"!", function(){
-				messageFactory.getMessages(function(data){
-					$scope.messages = data;
-					$scope.$digest();
+			if(this.type=="player"){
+				messageFactory.addMessage(this.name+" attacks "+enemy.name+"!", function(){
+					messageFactory.getMessages(function(data){
+						$scope.messages = data;
+						$scope.$digest();
+					});
 				});
-			});
-			enemy.sanity=enemy.sanity-10;
-			enemy.checkSanity();
-				this.sanity=this.sanity-1;
+				enemy.sanity=enemy.sanity-this.strength;
+				this.sanity=this.sanity-enemy.strength;
+				enemy.checkSanity();
 				this.checkSanity();
+			}
 		}
 
 		this.move = function(dir) {
@@ -63,7 +89,7 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 					//if movement is valid, change the map characters for both squares and update the character coordinate.
 					mapFactory.update($scope.map,(this.x-1),this.y,'.', this.x,this.y,this.mapCharacter, function(){
 						mapFactory.getMap(function(data){
-							$scope.map = data;
+							$scope.map = data.map;
 							$scope.$digest();
 						});
 					});
@@ -71,16 +97,22 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 				} else if ($scope.map[this.y][this.y][this.x-1] =="A" ||
 						$scope.map[this.y][this.y][this.x-1] == "B" || 
 						$scope.map[this.y][this.y][this.x-1] =="C") {
-					for(enemy in $scope.enemies){
-						if ($scope.enemies[enemy].x == this.x-1  && $scope.enemies[enemy].y == this.y) {
-							var thisenemy = $scope.enemies[enemy];
-							console.log("match:", thisenemy);
-							$scope.player.fight(thisenemy);
-							break;
+					if(this.type=='player'){
+						for(enemy in $scope.enemies){
+							if ($scope.enemies[enemy].x == this.x-1  && $scope.enemies[enemy].y == this.y) {
+								var thisenemy = $scope.enemies[enemy];
+								this.fight(thisenemy);
+								break;
+							}
 						}
 					}
 					
-				} else if(this.type=='player') {
+				} 
+				else if ($scope.map[this.y][this.y][this.x-1] =="|"){
+					this.nextLevel();
+				}
+
+				else if(this.type=='player') {
 					console.log('You are banging your head against a wall.')
 				}
 			} //left
@@ -89,7 +121,7 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 			if($scope.map[this.y][this.y][this.x+1] ==".") {
 				mapFactory.update($scope.map,(this.x+1),this.y,'.', this.x,this.y,this.mapCharacter, function(){
 						mapFactory.getMap(function(data){
-							$scope.map = data;
+							$scope.map = data.map;
 							$scope.$digest();
 						});
 					});
@@ -97,11 +129,13 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 			} else if ($scope.map[this.y][this.y][this.x+1] =="A" || 
 						$scope.map[this.y][this.y][this.x+1] =="B" || 
 						$scope.map[this.y][this.y][this.x+1] =="C") {
-				for(enemy in $scope.enemies){
-					if ($scope.enemies[enemy].x == this.x+1  && $scope.enemies[enemy].y == this.y) {
-						var thisenemy = $scope.enemies[enemy];
-						$scope.player.fight(thisenemy);
-						break;
+				if(this.type=="player"){
+					for(enemy in $scope.enemies){
+						if ($scope.enemies[enemy].x == this.x+1  && $scope.enemies[enemy].y == this.y) {
+							var thisenemy = $scope.enemies[enemy];
+							this.fight(thisenemy);
+							break;
+						}
 					}
 				}
 			//	$scope.player.fight(thisenemy);
@@ -114,17 +148,19 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 			if($scope.map[this.y-1][this.y-1][this.x] ==".") {
 				mapFactory.update($scope.map,this.x,(this.y-1),'.', this.x,this.y,this.mapCharacter, function(){
 						mapFactory.getMap(function(data){
-							$scope.map = data;
+							$scope.map = data.map;
 							$scope.$digest();
 						});
 					});
 				this.y = this.y-1;
 			} else if ($scope.map[this.y-1][this.y-1][this.x] =="A" || "B" || "C") {
-				for(enemy in $scope.enemies){
-					if ($scope.enemies[enemy].x == this.x  && $scope.enemies[enemy].y == this.y-1) {
-						var thisenemy = $scope.enemies[enemy];
-						$scope.player.fight(thisenemy);
-						break;
+				if(this.type=="player"){
+					for(enemy in $scope.enemies){
+						if ($scope.enemies[enemy].x == this.x  && $scope.enemies[enemy].y == this.y-1) {
+							var thisenemy = $scope.enemies[enemy];
+							this.fight(thisenemy);
+							break;
+						}
 					}
 				}
 			//	$scope.player.fight(thisenemy);
@@ -137,17 +173,19 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 			if($scope.map[this.y+1][this.y+1][this.x] ==".") {
 				mapFactory.update($scope.map,this.x,(this.y+1),'.', this.x,this.y,this.mapCharacter, function(){
 					mapFactory.getMap(function(data){
-						$scope.map = data;
+						$scope.map = data.map;
 						$scope.$digest();
 					});
 				});	
 			this.y = this.y+1;
 			} else if ($scope.map[this.y+1][this.y+1][this.x] =="A" || "B" || "C") {
-				for(enemy in $scope.enemies){
-					if ($scope.enemies[enemy].x == this.x  && $scope.enemies[enemy].y == this.y+1) {
-						var thisenemy = $scope.enemies[enemy];
-						$scope.player.fight(thisenemy);
-						break;
+				if(this.type=="player"){
+					for(enemy in $scope.enemies){
+						if ($scope.enemies[enemy].x == this.x  && $scope.enemies[enemy].y == this.y+1) {
+							var thisenemy = $scope.enemies[enemy];
+							this.fight(thisenemy);
+							break;
+						}
 					}
 				}
 			//	$scope.player.fight(thisenemy);
@@ -167,22 +205,25 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 		this.sanity = sanity; //hp
 		this.level = 1; //character level
 		this.performance = 0; //xp
+		this.strength = strength;
 
 		this.checkBoredom=function(){
 			if(this.boredom>100){
-				//function for player losing
+				document.getElementById('map').style.display = 'none';
+				document.getElementById('inventory').style.display = 'none';
+				document.getElementById('stats').style.display = 'none';
+				document.getElementById('gameover_boredom').style.display = 'block';
 			}
 		}
 
-
 	}
-
 	Player.prototype = new Character;
 
 	function Enemy (name,x,y,mapCharacter,sanity,level,strength) {
 		this.base = Character;
 		this.base(name,x,y,mapCharacter,sanity,level,strength);
 		this.type = "enemy";
+		this.strength = strength;
 	}
 	Enemy.prototype = new Character;
 
@@ -199,7 +240,7 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 			ydist=$scope.enemies[enemy].y-$scope.player.y;
 			//if the enemy is within 1 square of the player, fight instead of having the enemy move
 			//I think this function should be here instead of the player movement to allow the possibility of fighting multiple enemies at same time
-			if((-1<=xdist&&xdist<=1)||(-1<=ydist&&ydist<=1)){
+			if((-1<=xdist&&xdist<=1)&&(-1<=ydist&&ydist<=1)){
 			//	$scope.player.fight(enemy);
 			}
 			else{
@@ -242,28 +283,30 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 		//represeted by A,B,C on map to show different enemy type
 		return enemies;
 	}
+	$scope.restart = function(){
+		console.log('trying to restart');
+		window.location.reload();
+	}
 
-
-	$scope.doGame = function() {
+	$scope.doGame = function(name) {
 		var alive = true;
 		$scope.gameNotStarted = false;
-		$scope.player = new Player($scope.name,5,5,'@',10,0,1,10);
+		$scope.player = new Player(name,5,5,'@',10,0,1,10);
 		//name,x,y,mapCharacter,sanity,boredom,level,strength
 		$scope.enemies = add_enemies();
 		
 		mapFactory.getItem('sanity',function(item){
-				item.x = Math.ceil(Math.random()*24);
-				item.y = Math.ceil(Math.random()*24);
-				$scope.items = item;
+				console.log($scope.map);
 				mapFactory.update($scope.map,item.x,item.y,item.mapCharacter, item.x,item.y,item.mapCharacter, function(){
 					mapFactory.getMap(function(data){
-						$scope.map = data;
+						$scope.map = data.map;
+						$scope.items = data.items;
 					});
 				});
 			});
 
 		mapFactory.initMap($scope.enemies,function (data){
-	        $scope.map = data;
+	        $scope.map = data.map;
 	        messageFactory.welcome(function (msg){
 				for (item in msg) {
 		          $scope.messages.push(msg[item]);
