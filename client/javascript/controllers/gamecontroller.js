@@ -65,11 +65,21 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
   				}
 			}
 		}
-
+		this.pickup = function(item){
+		    this[item.effect.stat]+=item.effect.effect;
+		    if(item.effect.stat=="sanity"){
+		    	this.sanity=Math.min(this.sanity,10);
+		   	} else if(item.effect.stat=="boredom"){
+		    this.boredom=Math.max(this.boredom,0);
+		   	}
+		   var index=$scope.items.indexOf(item);
+		   $scope.items.splice(index,1);
+		}
 
 		this.fight=function(enemy){
 			if(this.type=="player"){
-				messageFactory.addMessage(this.name+" attacks "+enemy.name+"!", function(){
+				var name = this.name;
+				messageFactory.addMessage(name+" attacks "+enemy.name+"!", function(){
 					messageFactory.getMessages(function(data){
 						$scope.messages = data;
 						$scope.$digest();
@@ -106,13 +116,26 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 							}
 						}
 					}
-					
-				} 
-				else if ($scope.map[this.y][this.y][this.x-1] =="|"){
+				} else if ($scope.map[this.y][this.y][this.x-1] == "!") {
+				    if(this.type=='player'){
+				     	var thisItem = isItem(this.x-1,this.y);
+				        this.pickup(thisItem);
+				        messageFactory.addMessage(thisItem.useMessage, function(){
+							messageFactory.getMessages(function(data){
+								$scope.messages = data;
+							});
+						});
+				        mapFactory.update($scope.map,this.x-1,this.y,'.', this.x,this.y,'@', function(){
+							mapFactory.getMap(function(data){
+							$scope.map = data.map;
+							$scope.$digest();
+						});
+					});
+				    this.x = this.x-1;
+				    }	
+				} else if ($scope.map[this.y][this.y][this.x-1] =="|"){
 					this.nextLevel();
-				}
-
-				else if(this.type=='player') {
+				} else if(this.type=='player') {
 					console.log('You are banging your head against a wall.')
 				}
 			} //left
@@ -138,11 +161,30 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 						}
 					}
 				}
-			//	$scope.player.fight(thisenemy);
-			}  else if(this.type=='player') {
-				console.log('You are banging your head against a wall.')
+			} else if ($scope.map[this.y][this.y][this.x+1] == "!") {
+			    if(this.type=='player'){
+			      	var thisItem = isItem(this.x+1,this.y);
+				    this.pickup(thisItem);
+				    messageFactory.addMessage(thisItem.useMessage, function(){
+						messageFactory.getMessages(function(data){
+							$scope.messages = data;
+						});
+					});
+			      mapFactory.update($scope.map,(this.x+1),this.y,'.', this.x,this.y,this.mapCharacter, function(){
+			       mapFactory.getMap(function(data){
+			        $scope.map = data.map;
+			        $scope.$digest();
+			       });
+			      });
+			      this.x = this.x+1;
+			     }  
+    		} else if ($scope.map[this.y][this.y][this.x+1] =="|"){
+					this.nextLevel();
+			} else if(this.type=='player') {
+					console.log('You are banging your head against a wall.')
 			}
 		}
+
 		//if up arrow onkeydown 40	
 		if(dir == 'up') {
 			if($scope.map[this.y-1][this.y-1][this.x] ==".") {
@@ -153,7 +195,9 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 						});
 					});
 				this.y = this.y-1;
-			} else if ($scope.map[this.y-1][this.y-1][this.x] =="A" || "B" || "C") {
+			} else if ($scope.map[this.y-1][this.y-1][this.x] =="A" || 
+						$scope.map[this.y-1][this.y-1][this.x] =="B" || 
+						$scope.map[this.y-1][this.y-1][this.x] =="C") {
 				if(this.type=="player"){
 					for(enemy in $scope.enemies){
 						if ($scope.enemies[enemy].x == this.x  && $scope.enemies[enemy].y == this.y-1) {
@@ -163,11 +207,32 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 						}
 					}
 				}
-			//	$scope.player.fight(thisenemy);
+			} else if ($scope.map[this.y-1][this.y-1][this.x] == "!") {
+			    if(this.type=='player'){
+			      	var thisItem = isItem(this.x,this.y-1);
+			      	console.log('thisItem',thisItem);
+				    this.pickup(thisItem);
+				    messageFactory.addMessage(thisItem.useMessage, function(){
+						messageFactory.getMessages(function(data){
+							$scope.messages = data;
+						});
+					});
+			      mapFactory.update($scope.map,(this.x),this.y-1,'.', this.x,this.y,this.mapCharacter, function(){
+			       mapFactory.getMap(function(data){
+			        $scope.map = data.map;
+			        $scope.$digest();
+			       });
+			      });
+			      this.y = this.y-1;
+			     }  
+    		} else if ($scope.map[this.y-1][this.y-1][this.x] =="_"){
+					this.nextLevel();
 			} else if(this.type=='player') {
-			console.log('You are banging your head against a wall.')
+					console.log('You are banging your head against a wall.')
 			}
-		}
+		} //up
+
+
 		//if down arrow onkeydown 38
 		if(dir == 'down') {
 			if($scope.map[this.y+1][this.y+1][this.x] ==".") {
@@ -177,8 +242,10 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 						$scope.$digest();
 					});
 				});	
-			this.y = this.y+1;
-			} else if ($scope.map[this.y+1][this.y+1][this.x] =="A" || "B" || "C") {
+				this.y = this.y+1;
+			} else if ($scope.map[this.y+1][this.y+1][this.x] =="A" ||
+						$scope.map[this.y+1][this.y+1][this.x] == "B" || 
+						$scope.map[this.y+1][this.y+1][this.x] =="C") {
 				if(this.type=="player"){
 					for(enemy in $scope.enemies){
 						if ($scope.enemies[enemy].x == this.x  && $scope.enemies[enemy].y == this.y+1) {
@@ -188,7 +255,24 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 						}
 					}
 				}
-			//	$scope.player.fight(thisenemy);
+			} else if ($scope.map[this.y+1][this.y+1][this.x] == "!") {
+			    if(this.type=='player'){
+			      	var thisItem = isItem(this.x,this.y+1);
+			      	console.log('thisItem',thisItem);
+				    this.pickup(thisItem);
+				    messageFactory.addMessage(thisItem.useMessage, function(){
+						messageFactory.getMessages(function(data){
+							$scope.messages = data;
+						});
+					});
+			      mapFactory.update($scope.map,(this.x),this.y+1,'.', this.x,this.y,this.mapCharacter, function(){
+			       mapFactory.getMap(function(data){
+			        $scope.map = data.map;
+			        $scope.$digest();
+			       });
+			      });
+			      this.y = this.y+1;
+			     }  	
 			} else if(this.type=='player') {
 				console.log('You are banging your head against a wall.')
 			}
@@ -207,6 +291,8 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 		this.performance = 0; //xp
 		this.strength = strength;
 
+
+
 		this.checkBoredom=function(){
 			if(this.boredom>100){
 				document.getElementById('map').style.display = 'none';
@@ -215,8 +301,7 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 				document.getElementById('gameover_boredom').style.display = 'block';
 			}
 		}
-
-	}
+	}// Player
 	Player.prototype = new Character;
 
 	function Enemy (name,x,y,mapCharacter,sanity,level,strength) {
@@ -295,21 +380,18 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 		//name,x,y,mapCharacter,sanity,boredom,level,strength
 		$scope.enemies = add_enemies();
 		
-		mapFactory.getItem('sanity',function(item){
-				console.log($scope.map);
-				mapFactory.update($scope.map,item.x,item.y,item.mapCharacter, item.x,item.y,item.mapCharacter, function(){
-					mapFactory.getMap(function(data){
-						$scope.map = data.map;
-						$scope.items = data.items;
+		mapFactory.initMap($scope.enemies,function (data){
+			$scope.map = data;
+	        mapFactory.getItem('sanity',function(item){
+				mapFactory.putItemsOnMap($scope.map,item,function(output){
+						$scope.map = output.map;
+						$scope.items.push(output.items);
 					});
 				});
 			});
-
-		mapFactory.initMap($scope.enemies,function (data){
-	        $scope.map = data.map;
 	        messageFactory.welcome(function (msg){
-				for (item in msg) {
-		          $scope.messages.push(msg[item]);
+				for (line in msg) {
+		          $scope.messages.push(msg[line]);
 		        }
 		    });
 
@@ -318,7 +400,7 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
                 $scope.messages = data;  
 	    	  });
 	    	});
-	    });
+	    
 
 		document.onkeydown = function(e){
 			var validkeys = [37,38,39,40];
@@ -339,6 +421,45 @@ cubeCrawler.controller('gameController', function($scope, mapFactory, messageFac
 
 	} //doGame
 
+	var isEnemy = function(x,y) {
+		for(enemy in $scope.enemies){
+			if ($scope.enemies[enemy].x == x  && $scope.enemies[enemy].y == y) {
+				return $scope.enemies[enemy];
+			break;
+			}
+		}
+		return false;
+	}
+
+	var isItem = function(x,y) {
+		for(item in $scope.items){
+			if ($scope.items[item].x == x  && $scope.items[item].y == y) {
+				return $scope.items[item];
+			break;
+			}
+		}
+		return false;
+	}
+	
+	$scope.showInfo = function(y,x) {
+		var thisenemy = isEnemy(x,y);
+		var thisitem = isItem(x,y);
+		if (thisenemy) {
+			messageFactory.addMessage("That's "+thisenemy.name+"."+" Current sanity: "+thisenemy.sanity, function(){
+						messageFactory.getMessages(function(data){
+							$scope.messages = data;
+						//	$scope.$digest();
+						});
+			});
+		} else if (thisitem) {
+			messageFactory.addMessage("That's a "+thisitem.name+". "+thisitem.description, function(){
+						messageFactory.getMessages(function(data){
+							$scope.messages = data;
+						//	$scope.$digest();
+						});
+			});
+		}
+	}
 }); //gameController
 
 

@@ -32,7 +32,7 @@ cubeCrawler.factory('mapFactory',function ($http){
             map[y][y][x] = enemies[enemy].mapCharacter;
           } 
 
-        for (item in items) {
+ /*       for (item in items) {
             var x;
             var y;
             do { 
@@ -46,8 +46,9 @@ cubeCrawler.factory('mapFactory',function ($http){
             map[y][y][x] = items[item].mapCharacter;
         }
 
-        var returndata = {'map':map,"items":items};
-        callback(returndata);
+        var returndata = {'map':map,"items":items}; 
+        callback(returndata); */
+        callback(map);
       }//initMap
 
         factory.updatePlayerCoords = function(callback) {
@@ -71,10 +72,27 @@ cubeCrawler.factory('mapFactory',function ($http){
           item = output;
           item.x = Math.ceil(Math.random()*24);
           item.y = Math.ceil(Math.random()*19);
-
           callback(item);
         });
       } //getItem
+
+      factory.putItemsOnMap = function(map,item,callback) {
+            var x = item.x;
+            var y = item.y;
+            while(map[y][y][x] !== ".") { 
+              x = Math.ceil(Math.random()*24);
+              y = Math.ceil(Math.random()*19);
+            };
+
+            item.x= x;
+            item.y = y;
+            
+            map[y][y][x] = item.mapCharacter;
+
+        var returndata = {'map':map,"items":item}; 
+        console.log('return', returndata);
+        callback(returndata);
+    } //putItemsOnMap
 
   return factory;
 });
